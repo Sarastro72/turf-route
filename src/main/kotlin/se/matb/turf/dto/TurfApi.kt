@@ -34,5 +34,5 @@ data class Zone(
 data class Region(
     val id: Int,
     val name: String,
-    val country: String
+    val country: String = "-"
 )

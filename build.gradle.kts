@@ -32,5 +32,6 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:$kotlin_version")
     implementation("com.google.guava:guava:30.1.1-jre")
     implementation("io.github.microutils:kotlin-logging:1.12.0")
+    testImplementation("org.assertj:assertj-core:3.19.0")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
 }

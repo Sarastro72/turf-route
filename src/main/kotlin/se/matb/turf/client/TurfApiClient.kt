@@ -3,22 +3,26 @@ package se.matb.turf.client
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.request.get
 import kotlinx.coroutines.runBlocking
-import se.matb.turf.dto.TakeOver
+import se.matb.turf.logging.Logging
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 class TurfApiClient {
+    companion object : Logging()
+
     private var client: HttpClient = HttpClient(CIO) {
         install(JsonFeature) {
             serializer = JacksonSerializer {
+                registerModule(KotlinModule())
                 registerModule(JavaTimeModule())
                 configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                 configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
@@ -31,7 +35,7 @@ class TurfApiClient {
         .withZone(ZoneId.from(ZoneOffset.UTC))
 
 
-    fun fetchEvents(from: Instant?): List<TakeOver> = runBlocking {
+    fun fetchEvents(from: Instant? = null): List<TakeOver> = runBlocking {
         if (from == null)
             client.get("https://api.turfgame.com/v4/feeds/takeover")
         else

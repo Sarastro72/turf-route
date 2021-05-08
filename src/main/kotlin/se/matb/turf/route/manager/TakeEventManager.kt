@@ -6,21 +6,23 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import se.matb.turf.client.TakeOver
 import se.matb.turf.client.TurfApiClient
-import se.matb.turf.dto.TakeOver
 import se.matb.turf.logging.Logging
 import se.matb.turf.route.dao.RouteDao
 import se.matb.turf.route.dao.ZoneDao
+import se.matb.turf.route.model.RouteInfo
+import se.matb.turf.route.model.TakeInfo
+import se.matb.turf.route.model.ZoneInfo
 import java.time.Duration
 import java.time.Instant
-import kotlin.math.max
 
 const val INTERVAL_MILLIS: Long = 20000
 const val ROUTE_MAX_TIME_MINUTES: Long = 30
 
 class TakeEventManager(
-    val routeDao: RouteDao,
-    val zoneDao: ZoneDao
+    private val routeDao: RouteDao,
+    private val zoneDao: ZoneDao
 ) {
 
     companion object : Logging()
@@ -33,7 +35,8 @@ class TakeEventManager(
     // State
     private var running = false
     private var finished = true
-    private var lastEventTime: Instant? = null
+    private var lastEventTime: Instant? = routeDao.getLastTimestamp()
+    private var statCounter = 0
 
     fun start() {
         if (!running) {
@@ -51,6 +54,8 @@ class TakeEventManager(
     }
 
     private suspend fun takeLoop() {
+        preLoadPlayerCache()
+        LOG.info { "Starting take loop with last updated timestamp = $lastEventTime" }
         while (running) {
             kotlin.runCatching {
                 val events = turfApiClient.fetchEvents(lastEventTime)
@@ -58,7 +63,20 @@ class TakeEventManager(
             }.getOrElse { LOG.warn { "Failed to fetch events due to ${it::class.simpleName} – ${it.message}" } }
             delay(INTERVAL_MILLIS)
         }
+        LOG.info { "Take loop stopped with last event timestamp $lastEventTime" }
         finished = true
+    }
+
+    private fun preLoadPlayerCache() {
+        LOG.info { "Preloading player cache from takes until $lastEventTime" }
+        kotlin.runCatching {
+            turfApiClient.fetchEvents()
+                .reversed()
+                .filter { take -> !take.time.isAfter(lastEventTime) }
+                .forEach { take ->
+                    playerCache.put(take.currentOwner.id, TakeInfo(take.zone.id, take.time))
+                }
+        }
     }
 
     private fun handleEvents(events: List<TakeOver>) {
@@ -84,15 +102,17 @@ class TakeEventManager(
                     }
                 }
                 playerCache.put(take.currentOwner.id, TakeInfo(take.zone.id, take.time))
-                take.zone.run {
-                    zoneDao.storeZone(ZoneInfo(id, name, latitude, longitude, region.name, region.country))
+                if (zoneDao.lookupZone(take.zone.id) == null) {
+                    // Store new zone
+                    take.zone.run {
+                        zoneDao.storeZone(ZoneInfo(id, name, latitude, longitude, region.name, region.country))
+                    }
                 }
             }
         }
         logStats()
     }
 
-    var statCounter = 0
     private fun logStats() {
         if (statCounter++ % 4 == 0) {
             val regions: MutableMap<String, Int> = HashMap()
@@ -109,6 +129,7 @@ class TakeEventManager(
                 .forEach {
                     LOG.info { "|  ${it.key}: ${it.value} " }
                 }
+            LOG.info { "| Known zones: ${zoneDao.countZones()}" }
             LOG.info { "| Known routes: ${routeDao.countRoutes()}" }
             LOG.info { "\\ Active players: ${playerCache.size()}" }
             LOG.info { " ---------------------------------------" }
@@ -116,76 +137,4 @@ class TakeEventManager(
     }
 }
 
-data class TakeInfo(
-    val zoneId: Int,
-    val time: Instant
-)
-
-data class ZoneInfo(
-    val id: Int,
-    val name: String,
-    val lat: Double,
-    val long: Double,
-    val region: String,
-    val country: String
-)
-
-data class RouteInfo(
-    val fromZone: Int,
-    val toZone: Int,
-    val times: MutableList<Int> = ArrayList()
-) {
-    companion object : Logging()
-
-    val fastestTime: Int
-        get() = times[0]
-    var fastestUser = ""
-    var fastestTimestamp = Instant.now()
-
-    // Sorted insert
-    fun addTime(time: Int, user: String = "-", timestamp: Instant = Instant.now()) {
-        if (times.isEmpty()) {
-            times.add(time)
-            fastestUser = user
-            fastestTimestamp = timestamp
-            return
-        }
-        var pos = times.size / 2
-        var step = pos
-        while (true) {
-            step = max(step / 2, 1)
-            when {
-                pos == times.size -> break
-                pos == 0 && times[0] >= time -> break
-                times[pos] < time -> pos += step
-                times[pos - 1] > time -> pos -= step
-                else -> break
-            }
-        }
-        if (time < times[0]) {
-            fastestUser = user
-            fastestTimestamp = timestamp
-        }
-        times.add(pos, time)
-    }
-
-    fun avg(): Int? {
-        return if (times.isEmpty()) null
-        else times.sum() / times.size
-    }
-
-    fun med(): Int? {
-        return if (times.isEmpty()) null
-        else times.toList()[times.size / 2]
-    }
-
-    fun min(): Int? {
-        return times.firstOrNull()
-    }
-
-    fun max(): Int? {
-        return times.lastOrNull()
-    }
-}
-
-fun niceTime(seconds: Int) = "${seconds / 60}m ${seconds % 60}s"
+fun niceTime(seconds: Int) = "${seconds / 60}m${seconds % 60}s"

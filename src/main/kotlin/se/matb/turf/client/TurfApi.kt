@@ -1,4 +1,4 @@
-package se.matb.turf.dto
+package se.matb.turf.client
 
 import java.time.Instant
 

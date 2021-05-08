@@ -1,6 +1,6 @@
 package se.matb.turf.route.dao
 
-import se.matb.turf.route.manager.ZoneInfo
+import se.matb.turf.route.model.ZoneInfo
 
 interface ZoneDao {
     fun lookupZone(id: Int): ZoneInfo?

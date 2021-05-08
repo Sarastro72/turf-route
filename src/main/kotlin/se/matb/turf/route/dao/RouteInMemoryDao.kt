@@ -1,6 +1,6 @@
 package se.matb.turf.route.dao
 
-import se.matb.turf.route.manager.RouteInfo
+import se.matb.turf.route.model.RouteInfo
 
 class RouteInMemoryDao : RouteDao {
     private val routes = HashMap<Pair<Int, Int>, RouteInfo>()

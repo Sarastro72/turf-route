@@ -20,5 +20,3 @@ fun Application.configureSerialization() {
         }
     }
 }
-
-data class Payload(val value: String, val time: Instant = Instant.now())

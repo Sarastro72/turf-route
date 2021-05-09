@@ -1,4 +1,4 @@
-package se.matb.turf.route.model
+package se.matb.turf.route.dao.model
 
 import org.jdbi.v3.core.mapper.RowMapper
 import org.jdbi.v3.core.statement.StatementContext
@@ -19,7 +19,7 @@ data class ZoneInfo(
     val lat: Double,
     val long: Double,
     val region: String,
-    val country: String
+    val country: String,
 ) {
     class ZoneRowMapper() : RowMapper<ZoneInfo> {
         override fun map(rs: ResultSet, ctx: StatementContext): ZoneInfo = with(rs) {
@@ -77,22 +77,22 @@ data class RouteInfo(
         times.add(pos, time)
     }
 
-    fun avg(): Int? {
-        return if (times.isEmpty()) null
+    fun avg(): Int {
+        return if (times.isEmpty()) 5949
         else times.sum() / times.size
     }
 
-    fun med(): Int? {
-        return if (times.isEmpty()) null
+    fun med(): Int {
+        return if (times.isEmpty()) 5949
         else times.toList()[times.size / 2]
     }
 
-    fun min(): Int? {
-        return times.firstOrNull()
+    fun min(): Int {
+        return times.firstOrNull() ?: 5949
     }
 
-    fun max(): Int? {
-        return times.lastOrNull()
+    fun max(): Int {
+        return times.lastOrNull() ?: 5949
     }
 
     class RouteRowMapper : RowMapper<RouteInfo> {

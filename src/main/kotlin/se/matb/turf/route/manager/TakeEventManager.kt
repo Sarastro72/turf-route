@@ -11,13 +11,13 @@ import se.matb.turf.client.TurfApiClient
 import se.matb.turf.logging.Logging
 import se.matb.turf.route.dao.RouteDao
 import se.matb.turf.route.dao.ZoneDao
-import se.matb.turf.route.model.RouteInfo
-import se.matb.turf.route.model.TakeInfo
-import se.matb.turf.route.model.ZoneInfo
+import se.matb.turf.route.dao.model.RouteInfo
+import se.matb.turf.route.dao.model.TakeInfo
+import se.matb.turf.route.dao.model.ZoneInfo
 import java.time.Duration
 import java.time.Instant
 
-const val INTERVAL_MILLIS: Long = 20000
+const val INTERVAL_MILLIS: Long = 60000
 const val ROUTE_MAX_TIME_MINUTES: Long = 30
 
 class TakeEventManager(
@@ -77,16 +77,17 @@ class TakeEventManager(
                     playerCache.put(take.currentOwner.id, TakeInfo(take.zone.id, take.time))
                 }
         }
+        LOG.info { "Preloaded ${playerCache.size()} players" }
     }
 
     private fun handleEvents(events: List<TakeOver>) {
         if (events.isNotEmpty()) {
+            LOG.info { "Handling ${events.size} new takes since $lastEventTime" }
             lastEventTime = events[0].time
-            LOG.info { "Handling ${events.size} new takes" }
             events.reversed().forEach { take ->
                 playerCache.getIfPresent(take.currentOwner.id)?.let { lastTake ->
                     val time = Duration.between(lastTake.time, take.time).toSeconds().toInt()
-                    val route = routeDao.lookupRoute(lastTake.zoneId, take.zone.id)
+                    val route = routeDao.getRoute(lastTake.zoneId, take.zone.id)
                         ?: RouteInfo(lastTake.zoneId, take.zone.id)
                     route.addTime(time, take.currentOwner.name, take.time)
                     routeDao.storeRoute(route)
@@ -115,6 +116,7 @@ class TakeEventManager(
 
     private fun logStats() {
         if (statCounter++ % 4 == 0) {
+            /*
             val regions: MutableMap<String, Int> = HashMap()
             routeDao.getAllRoutes().forEach { route ->
                 zoneDao.lookupZone(route.toZone)?.let { zone ->
@@ -122,14 +124,17 @@ class TakeEventManager(
                     regions[key] = regions.getOrDefault(key, 0) + 1
                 }
             }
+             */
             LOG.info { " ---------------- Stats ----------------" }
+            /*
             LOG.info { "/ Known routes per region:" }
             regions.entries
                 .sortedBy { it.key }
                 .forEach {
                     LOG.info { "|  ${it.key}: ${it.value} " }
                 }
-            LOG.info { "| Known zones: ${zoneDao.countZones()}" }
+             */
+            LOG.info { "/ Known zones: ${zoneDao.countZones()}" }
             LOG.info { "| Known routes: ${routeDao.countRoutes()}" }
             LOG.info { "\\ Active players: ${playerCache.size()}" }
             LOG.info { " ---------------------------------------" }

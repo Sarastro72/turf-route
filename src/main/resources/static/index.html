@@ -1,7 +1,36 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+
 <head>
+    <meta charset="utf-8"/>
+    <title>Turf Routes 𝛼</title>
+    <script src="js/lib/p5.min.js" type="text/javascript"></script>
+    <script src="js/lib/mappa.js" type="text/javascript"></script>
+    <script src="js/mappa_module.js" type="text/javascript"></script>
 </head>
+
 <body>
-<h1>Hello Ktor!</h1>
+<script>
+    initZoneMap(refreshMap)
+
+    let fetchJob = null
+
+    function refreshMap(bounds) {
+        if (fetchJob) clearTimeout(fetchJob)
+        fetchJob = setTimeout(function () {
+            fetchJob = null
+            let sw = bounds.sw
+            let ne = bounds.ne
+            //console.log(sw.lat + ", " + sw.long + ", " + ne.lat + ", " + ne.long)
+            fetch(`http://localhost:8080/route/zone/area/${sw.lat}/${sw.long}/${ne.lat}/${ne.long}`)
+                .then(response => response.json())
+                .then(zones => {
+                    zones.forEach(z => drawRoutes(z))
+                    zones.forEach(z => drawZone(z))
+                    console.log(`Drew ${zones.length} zones`)
+                });
+        }, 200)
+    }
+</script>
 </body>
 </html>

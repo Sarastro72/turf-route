@@ -7,7 +7,7 @@ import org.jdbi.v3.sqlobject.customizer.BindBean
 import org.jdbi.v3.sqlobject.statement.SqlQuery
 import org.jdbi.v3.sqlobject.statement.SqlUpdate
 import se.matb.turf.route.dao.db.TimesArgumentFactory
-import se.matb.turf.route.model.RouteInfo
+import se.matb.turf.route.dao.model.RouteInfo
 import java.time.Instant
 
 const val ROUTE_SELECT_COLUMNS = "fromZone, toZone, times, fastestUser, fastestTimestamp, updated"
@@ -23,10 +23,19 @@ interface RouteMariaDbDao : RouteDao {
         AND toZone=:toZone
         """
     )
-    override fun lookupRoute(
+    override fun getRoute(
         @Bind("fromZone") from: Int,
         @Bind("toZone") to: Int
     ): RouteInfo?
+
+    @SqlQuery(
+        """SELECT $ROUTE_SELECT_COLUMNS FROM route
+        WHERE fromZone=:fromZone
+        """
+    )
+    override fun lookupRoutesByFromZone(
+        @Bind("fromZone") from: Int
+    ): List<RouteInfo>
 
     @SqlUpdate(
         """INSERT INTO route ($ROUTE_INSERT_COLUMNS)

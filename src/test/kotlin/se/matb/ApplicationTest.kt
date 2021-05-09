@@ -10,7 +10,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 import org.assertj.core.api.Assertions.assertThat
-import se.matb.turf.route.model.RouteInfo
+import se.matb.turf.route.dao.model.RouteInfo
 import se.matb.turf.route.plugins.configureRouting
 import java.time.Instant
 import java.time.ZoneId

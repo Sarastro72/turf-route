@@ -5,6 +5,7 @@ CREATE TABLE zone
     latitude  DOUBLE      NOT NULL,
     longitude DOUBLE      NOT NULL,
     region    VARCHAR(32) NOT NULL,
-    country   VARCHAR(32)
+    country   VARCHAR(32),
+    UNIQUE KEY nameKey (name)
 ) engine = InnoDB
   default charset utf8;

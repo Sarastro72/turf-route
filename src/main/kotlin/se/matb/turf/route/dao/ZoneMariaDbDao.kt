@@ -5,7 +5,7 @@ import org.jdbi.v3.sqlobject.customizer.Bind
 import org.jdbi.v3.sqlobject.customizer.BindBean
 import org.jdbi.v3.sqlobject.statement.SqlQuery
 import org.jdbi.v3.sqlobject.statement.SqlUpdate
-import se.matb.turf.route.model.ZoneInfo
+import se.matb.turf.route.dao.model.ZoneInfo
 
 const val ZONE_COLUMNS: String = "id, name, latitude, longitude, region, country"
 
@@ -21,6 +21,28 @@ interface ZoneMariaDbDao : ZoneDao {
         @Bind("id") id: Int
     ): ZoneInfo?
 
+
+    @SqlQuery(
+        """SELECT $ZONE_COLUMNS FROM zone
+            WHERE name=:name
+        """
+    )
+    override fun lookupZone(
+        @Bind("name") name: String
+    ): ZoneInfo?
+
+    @SqlQuery(
+        """SELECT $ZONE_COLUMNS FROM zone
+            WHERE latitude BETWEEN :swLat AND :neLat
+            AND longitude BETWEEN :swLong AND :neLong
+        """
+    )
+    override fun lookupZonesInArea(
+        @Bind("swLat") swLat: Double,
+        @Bind("swLong") swLong: Double,
+        @Bind("neLat") neLat: Double,
+        @Bind("neLong") neLong: Double
+    ): List<ZoneInfo>
 
     @SqlUpdate(
         """INSERT INTO zone ($ZONE_COLUMNS)

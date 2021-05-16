@@ -34,6 +34,7 @@ data class RouteToDto(
     val toLong: Double,
     val timesRun: Int,
     val avgTime: Int,
+    val medTime: Int,
     val fastestTime: Int,
     val fastestUser: String,
     val fastestTimestamp: Instant,
@@ -48,15 +49,19 @@ data class RouteToDto(
                 z.long,
                 r.times.size,
                 r.avg(),
+                r.med(),
                 r.min(),
                 r.fastestUser,
                 r.fastestTimestamp,
                 calculateWeight(r.times.size, totalExits, totalRoutes)
             )
 
+        const val WEIGHT_LIMIT = 5
+
         private fun calculateWeight(routeRecords: Int, zoneRecords: Int, numberRoutes: Int): Int {
             val part = 100 / numberRoutes
             val percent = 100 * routeRecords / zoneRecords
+            if (percent < WEIGHT_LIMIT) return 0
             val weight = if (percent <= part) {
                 (percent * part / 500) + 1
             } else {

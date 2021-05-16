@@ -21,7 +21,6 @@ class TurfApiClient {
     private var client: HttpClient = HttpClient(CIO) {
         install(JsonFeature) {
             serializer = JacksonSerializer {
-                //registerModule(KotlinModule())
                 registerModule(JavaTimeModule())
                 configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
                 configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)

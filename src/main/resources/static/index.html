@@ -17,17 +17,17 @@
 
     function refreshMap(bounds) {
         if (fetchJob) clearTimeout(fetchJob)
-        fetchJob = setTimeout(function () {
+        fetchJob = setTimeout(() => {
             fetchJob = null
             let sw = bounds.sw
             let ne = bounds.ne
-            //console.log(sw.lat + ", " + sw.long + ", " + ne.lat + ", " + ne.long)
-            fetch(`http://localhost:8080/route/zone/area/${sw.lat}/${sw.long}/${ne.lat}/${ne.long}`)
+            fetch(`http://localhost:8080/zone/area/${sw.lat}/${sw.long}/${ne.lat}/${ne.long}`)
                 .then(response => response.json())
                 .then(zones => {
-                    zones.forEach(z => drawRoutes(z))
+                    let nRoutes = 0
+                    zones.forEach(z => nRoutes += drawRoutes(z))
                     zones.forEach(z => drawZone(z))
-                    console.log(`Drew ${zones.length} zones`)
+                    console.log(`Drew ${zones.length} zones and ${nRoutes} routes`)
                 });
         }, 200)
     }

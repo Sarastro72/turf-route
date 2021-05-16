@@ -3,8 +3,8 @@ let canvas
 let mappa
 let refreshCb
 const options = {
-    lat: 59.34,
-    lng: 17.90,
+    lat: 59.331,
+    lng: 18.03,
     zoom: 14,
     style: "http://{s}.tile.osm.org/{z}/{x}/{y}.png"
 }
@@ -27,38 +27,54 @@ function getMapBounds() {
 }
 
 function drawZone(zone) {
+    const size = max(myMap.zoom() - 4, 2)
     fill(255, 130, 100);
-    stroke(0, 0, 0, 255)
-    strokeWeight(1)
+    if (size > 8) {
+        stroke(0, 0, 0, 255)
+        strokeWeight(1)
+    } else if (size > 5) {
+        const alpha = (size - 5) * 64
+        stroke(0, 0, 0, alpha)
+        strokeWeight(1)
+    } else {
+        noStroke()
+    }
     const zPos = myMap.latLngToPixel(zone.lat, zone.long);
-    ellipse(zPos.x, zPos.y, 9, 9);
+    ellipse(zPos.x, zPos.y, size, size);
 }
 
 function drawRoutes(zone) {
+    let count = 0
     if (zone.routes) {
         const zPos = myMap.latLngToPixel(zone.lat, zone.long);
         zone.routes.forEach(r => {
-                const toPos = myMap.latLngToPixel(r.toLat, r.toLong);
-                const off = delta(zPos, toPos, 5)
-                const norm = normal(zPos, toPos, 10)
-                setStyleFromWeight(r.weight)
-                bezier(
-                    zPos.x,
-                    zPos.y,
-                    zPos.x + off.x + norm.x,
-                    zPos.y + off.y + norm.y,
-                    toPos.x - off.x + norm.x,
-                    toPos.y - off.y + norm.y,
-                    toPos.x,
-                    toPos.y
-                )
+                if (r.weight > 0) {
+                    const toPos = myMap.latLngToPixel(r.toLat, r.toLong);
+                    if (abs(zPos.x - toPos.x) + abs(zPos.y - toPos.y) > 10) {
+                        const off = delta(zPos, toPos, 5)
+                        const norm = normal(zPos, toPos, 10)
+                        setStyleFromWeight(r.weight)
+                        bezier(
+                            zPos.x,
+                            zPos.y,
+                            zPos.x + off.x + norm.x,
+                            zPos.y + off.y + norm.y,
+                            toPos.x - off.x + norm.x,
+                            toPos.y - off.y + norm.y,
+                            toPos.x,
+                            toPos.y
+                        )
+                        count++
+                    }
+                }
             }
         )
     }
+    return count
 }
 
 const alphas = [32, 32, 64, 128, 255, 255, 255, 255, 255, 255, 255]
-const strokeWeights = [0.2, 0.3, 0.4, 0.6, 0.8, 1, 1.5, 2, 2.5, 3, 3.5]
+const strokeWeights = [0.2, 0.3, 0.5, 0.7, 0.9, 1.5, 2, 2.5, 3, 4, 5]
 
 function setStyleFromWeight(w) {
     const alpha = 255 // alphas[w]

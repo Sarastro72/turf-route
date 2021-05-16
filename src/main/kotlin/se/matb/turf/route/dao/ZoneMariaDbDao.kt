@@ -17,9 +17,7 @@ interface ZoneMariaDbDao : ZoneDao {
             WHERE id=:id
         """
     )
-    override fun lookupZone(
-        @Bind("id") id: Int
-    ): ZoneInfo?
+    override fun lookupZone(@Bind("id") id: Int): ZoneInfo?
 
 
     @SqlQuery(
@@ -27,9 +25,7 @@ interface ZoneMariaDbDao : ZoneDao {
             WHERE name=:name
         """
     )
-    override fun lookupZone(
-        @Bind("name") name: String
-    ): ZoneInfo?
+    override fun lookupZone(@Bind("name") name: String): ZoneInfo?
 
     @SqlQuery(
         """SELECT $ZONE_COLUMNS FROM zone
@@ -56,9 +52,7 @@ interface ZoneMariaDbDao : ZoneDao {
             )
             """
     )
-    override fun storeZone(
-        @BindBean("zone") zone: ZoneInfo
-    )
+    override fun storeZone(@BindBean("zone") zone: ZoneInfo)
 
     @SqlQuery(
         """SELECT $ZONE_COLUMNS FROM zone

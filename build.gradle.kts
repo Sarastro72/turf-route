@@ -41,3 +41,17 @@ dependencies {
     testImplementation("org.assertj:assertj-core:3.19.0")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
 }
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "se.matb.turf.route.ApplicationKt"
+    }
+
+    from(
+        configurations.runtimeClasspath.get()
+            .filter { it.name.endsWith("jar") }
+            .map { zipTree(it) }
+    )
+
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+}

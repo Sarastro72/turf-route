@@ -73,11 +73,11 @@ function drawRoutes(zone) {
     return count
 }
 
-const alphas = [32, 32, 64, 128, 255, 255, 255, 255, 255, 255, 255]
-const strokeWeights = [0.2, 0.3, 0.5, 0.7, 0.9, 1.5, 2, 2.5, 3, 4, 5]
+const alphas = [0, 128, 192, 255, 255, 255, 255, 255, 255, 255, 255]
+const strokeWeights = [0, 0.3, 0.5, 0.7, 0.9, 1.5, 2, 2.5, 3, 4, 5]
 
 function setStyleFromWeight(w) {
-    const alpha = 255 // alphas[w]
+    const alpha = alphas[w]
     const weight = strokeWeights[w] + 0.2
     noFill()
     stroke(0, 0, 0, alpha)

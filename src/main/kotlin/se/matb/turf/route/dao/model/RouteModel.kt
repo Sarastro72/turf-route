@@ -7,6 +7,7 @@ import java.sql.ResultSet
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
+import kotlin.math.max
 
 data class TakeInfo(
     val zoneId: Int,
@@ -61,7 +62,7 @@ data class RouteInfo(
         var pos = times.size / 2
         var step = pos
         while (true) {
-            step = kotlin.math.max(step / 2, 1)
+            step = max(step / 2, 1)
             when {
                 pos == times.size -> break
                 pos == 0 && times[0] >= time -> break

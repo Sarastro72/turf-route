@@ -28,10 +28,15 @@ class QueryManager(
         }
     }
 
-    fun zoneDistance(zoneId1: Int, zoneId2: Int): Double {
+    fun routeDistance(zoneId1: Int, zoneId2: Int): Double {
         val zone1 = zoneDao.lookupZone(zoneId1) ?: throw NotFoundException("No such zone $zoneId1")
         val zone2 = zoneDao.lookupZone(zoneId2) ?: throw NotFoundException("No such zone $zoneId2")
         return distance(zone1.lat, zone1.long, zone2.lat, zone2.long)
+    }
+
+    fun routeSpeed(zoneId1: Int, zoneId2: Int, time: Int): Double {
+        val distance = routeDistance(zoneId1, zoneId2)
+        return distance * 3600 / time
     }
 
     fun fetchZoneById(id: Int): ZoneDto? {

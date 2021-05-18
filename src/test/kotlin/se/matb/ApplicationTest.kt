@@ -11,6 +11,7 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 import org.assertj.core.api.Assertions.assertThat
 import se.matb.turf.route.dao.model.RouteInfo
+import se.matb.turf.route.dto.RouteToDto
 import se.matb.turf.route.plugins.configureRouting
 import java.time.Instant
 import java.time.ZoneId
@@ -136,6 +137,32 @@ class ApplicationTest {
 
         val target = objectMapper.readValue("""{"time": "2021-05-07T12:22:43+0000"}""", InstantHolder::class.java)
         println(target)
+    }
+
+    @Test
+    fun `test weight calculation`() {
+        RouteToDto.calculateWeight(1, 1, 1)
+        RouteToDto.calculateWeight(1, 2, 2)
+        RouteToDto.calculateWeight(10, 100, 2)
+        RouteToDto.calculateWeight(20, 100, 2)
+        RouteToDto.calculateWeight(30, 100, 2)
+        RouteToDto.calculateWeight(40, 100, 2)
+        RouteToDto.calculateWeight(50, 100, 2)
+        RouteToDto.calculateWeight(60, 100, 2)
+        RouteToDto.calculateWeight(70, 100, 2)
+        RouteToDto.calculateWeight(80, 100, 2)
+        RouteToDto.calculateWeight(90, 100, 2)
+        RouteToDto.calculateWeight(100, 101, 2)
+        RouteToDto.calculateWeight(6, 100, 3)
+        RouteToDto.calculateWeight(11, 100, 3)
+        RouteToDto.calculateWeight(22, 100, 3)
+        RouteToDto.calculateWeight(33, 100, 3)
+        RouteToDto.calculateWeight(44, 100, 3)
+        RouteToDto.calculateWeight(55, 100, 3)
+        RouteToDto.calculateWeight(66, 100, 3)
+        RouteToDto.calculateWeight(77, 100, 3)
+        RouteToDto.calculateWeight(88, 100, 3)
+        RouteToDto.calculateWeight(99, 100, 3)
     }
 
     data class InstantHolder(val time: Instant)

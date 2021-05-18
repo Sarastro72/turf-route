@@ -53,7 +53,7 @@ fun Application.configureRouting() {
         get("/zone/distance/{from}/{to}") {
             val from = call.parameters["from"]?.toIntOrNull() ?: throw BadRequestException("Bad or missing parameter")
             val to = call.parameters["to"]?.toIntOrNull() ?: throw BadRequestException("Bad or missing parameter")
-            call.respond(mapOf("distance" to queryManager.zoneDistance(from, to)))
+            call.respond(mapOf("distance" to queryManager.routeDistance(from, to)))
         }
 
         get("/route/fastest/{from}/{to}") {

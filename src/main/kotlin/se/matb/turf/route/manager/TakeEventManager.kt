@@ -22,7 +22,8 @@ const val ROUTE_MAX_TIME_MINUTES: Long = 30
 
 class TakeEventManager(
     private val routeDao: RouteDao,
-    private val zoneDao: ZoneDao
+    private val zoneDao: ZoneDao,
+    private val queryManager: QueryManager
 ) {
 
     companion object : Logging()
@@ -60,7 +61,8 @@ class TakeEventManager(
             kotlin.runCatching {
                 val events = turfApiClient.fetchEvents(lastEventTime)
                 handleEvents(events)
-            }.getOrElse { LOG.warn { "Failed to fetch events due to ${it::class.simpleName} – ${it.message}" } }
+            }
+                .getOrElse { ex -> LOG.warn(ex) { "Failed to fetch events due to ${ex::class.simpleName} – ${ex.message}" } }
             delay(INTERVAL_MILLIS)
         }
         LOG.info { "Take loop stopped with last event timestamp $lastEventTime" }
@@ -74,6 +76,9 @@ class TakeEventManager(
                 .reversed()
                 .filter { take -> !take.time.isAfter(lastEventTime) }
                 .forEach { take ->
+                    take.zone.run {
+                        zoneDao.storeZone(ZoneInfo(id, name, latitude, longitude, region.name, region.country))
+                    }
                     playerCache.put(take.currentOwner.id, TakeInfo(take.zone.id, take.time))
                 }
         }
@@ -86,58 +91,46 @@ class TakeEventManager(
             lastEventTime = events[0].time
             events.reversed().forEach { take ->
                 playerCache.getIfPresent(take.currentOwner.id)?.let { lastTake ->
+                    take.zone.run {
+                        // Keep zone data updated
+                        zoneDao.storeZone(ZoneInfo(id, name, latitude, longitude, region.name, region.country))
+                    }
                     val time = Duration.between(lastTake.time, take.time).toSeconds().toInt()
                     val route = routeDao.getRoute(lastTake.zoneId, take.zone.id)
                         ?: RouteInfo(lastTake.zoneId, take.zone.id)
                     route.addTime(time, take.currentOwner.name, take.time)
                     routeDao.storeRoute(route)
-                    LOG.info {
-                        "New time in ${take.zone.region.name} from ${zoneDao.lookupZone(lastTake.zoneId)?.name} to ${take.zone.name} " +
-                            "in ${niceTime(time)} by ${take.currentOwner.name} – ${route.times}"
-                    }
-                    if (route.times.size > 1 && time < route.times[1]) {
-                        LOG.info {
-                            "!!!New best time ${niceTime(time)} registered between " +
-                                "${zoneDao.lookupZone(lastTake.zoneId)?.name} and ${take.zone.name} by ${take.currentOwner.name}"
-                        }
-                    }
+                    logRoute(lastTake, take, route, time)
                 }
                 playerCache.put(take.currentOwner.id, TakeInfo(take.zone.id, take.time))
-                if (zoneDao.lookupZone(take.zone.id) == null) {
-                    // Store new zone
-                    take.zone.run {
-                        zoneDao.storeZone(ZoneInfo(id, name, latitude, longitude, region.name, region.country))
-                    }
-                }
             }
         }
         logStats()
     }
 
+    private fun logRoute(lastTake: TakeInfo, take: TakeOver, route: RouteInfo, time: Int) {
+        kotlin.runCatching {
+            var logString = "${take.zone.region.name}: ${zoneDao.lookupZone(lastTake.zoneId)?.name} " +
+                "-> ${take.zone.name} ${niceTime(time)} " +
+                "${queryManager.routeSpeed(lastTake.zoneId, take.zone.id, time).toInt()}km/h " +
+                "${take.currentOwner.name} – ${route.times.size} ${route.times[0]}/${route.med()}/${route.avg()}"
+            if (route.times.size == 1) logString += " 🆕"
+            if (route.times.size > 1 && time < route.times[1]) logString += " 🥇"
+            LOG.info { logString }
+        }.onFailure { ex ->
+            LOG.warn(ex) {
+                "Failed logging ${lastTake.zoneId} to ${take.zone.name} for ${take.currentOwner.name} due to ${ex::class.simpleName}: ${ex.message}"
+            }
+        }
+    }
+
     private fun logStats() {
         if (statCounter++ % 4 == 0) {
-            /*
-            val regions: MutableMap<String, Int> = HashMap()
-            routeDao.getAllRoutes().forEach { route ->
-                zoneDao.lookupZone(route.toZone)?.let { zone ->
-                    val key = "${zone.country}.${zone.region}"
-                    regions[key] = regions.getOrDefault(key, 0) + 1
-                }
-            }
-             */
-            LOG.info { " ---------------- Stats ----------------" }
-            /*
-            LOG.info { "/ Known routes per region:" }
-            regions.entries
-                .sortedBy { it.key }
-                .forEach {
-                    LOG.info { "|  ${it.key}: ${it.value} " }
-                }
-             */
-            LOG.info { "/ Known zones: ${zoneDao.countZones()}" }
+            LOG.info { "/--------------- Stats ----------------" }
+            LOG.info { "| Known zones: ${zoneDao.countZones()}" }
             LOG.info { "| Known routes: ${routeDao.countRoutes()}" }
-            LOG.info { "\\ Active players: ${playerCache.size()}" }
-            LOG.info { " ---------------------------------------" }
+            LOG.info { "| Active players: ${playerCache.size()}" }
+            LOG.info { "\\--------------------------------------" }
         }
     }
 }

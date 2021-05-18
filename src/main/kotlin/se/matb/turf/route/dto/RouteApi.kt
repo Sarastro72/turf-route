@@ -58,15 +58,17 @@ data class RouteToDto(
 
         const val WEIGHT_LIMIT = 5
 
-        private fun calculateWeight(routeRecords: Int, zoneRecords: Int, numberRoutes: Int): Int {
+        fun calculateWeight(routeRecords: Int, zoneRecords: Int, numberRoutes: Int): Int {
+            //println("calculateWeight($routeRecords, $zoneRecords, $numberRoutes)")
             val part = 100 / numberRoutes
             val percent = 100 * routeRecords / zoneRecords
             if (percent < WEIGHT_LIMIT) return 0
             val weight = if (percent <= part) {
-                (percent * part / 500) + 1
+                1 + 4 * percent / part
             } else {
                 5 + (percent - part) * 5 / (100 - part)
             }
+            //println("$percent / $part => ${min(weight, min(10, routeRecords))} ($weight)")
             return min(
                 weight,
                 min(10, routeRecords)

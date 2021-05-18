@@ -1,7 +1,6 @@
 package se.matb.turf.route.plugins
 
 import io.ktor.application.Application
-import io.ktor.application.ApplicationEnvironment
 import org.jdbi.v3.core.Jdbi
 import se.matb.turf.route.dao.RouteDao
 import se.matb.turf.route.dao.RouteDaoFacade
@@ -18,20 +17,17 @@ lateinit var routeDao: RouteDao
 lateinit var queryManager: QueryManager
 
 fun Application.configureCore() {
-    val dbUrl = environment.config.propertyOrNull("ktor.dbUrl")?.getString() ?: error("Need dbUrl in config")
+    val dbUrl = configString("ktor.dbUrl") ?: error("Need dbUrl in config")
     val properties = Properties()
-    properties["user"] = environment.config.propertyOrNull("ktor.dbUser")?.getString() ?: error("Need dbUser in config")
-    properties["password"] =
-        environment.config.propertyOrNull("ktor.security.dbPass")?.getString() ?: error("Need dbPass in config")
+    properties["user"] = configString("ktor.dbUser") ?: error("Need dbUser in config")
+    properties["password"] = configString("ktor.security.dbPass") ?: error("Need dbPass in config")
+    properties["sessionTimeZone"] = "UTC"
     val jdbi = Jdbi.create(dbUrl, properties).installPlugins()
     routeDao = RouteDaoFacade(jdbi.onDemand(RouteMariaDbDao::class.java))
     zoneDao = ZoneDaoFacade(jdbi.onDemand(ZoneMariaDbDao::class.java))
 
     queryManager = QueryManager(zoneDao, routeDao)
-    TakeEventManager(routeDao, zoneDao).start()
+    TakeEventManager(routeDao, zoneDao, queryManager).start()
 }
 
-private fun dbUrl(environment: ApplicationEnvironment): String {
-    val dbPass = environment.config.propertyOrNull("ktor.security.dbPass")?.getString() ?: ""
-    return environment.config.propertyOrNull("ktor.dbUrl")?.getString()?.replace("####", dbPass) ?: ""
-}
+fun Application.configString(key: String) = environment.config.propertyOrNull(key)?.getString()

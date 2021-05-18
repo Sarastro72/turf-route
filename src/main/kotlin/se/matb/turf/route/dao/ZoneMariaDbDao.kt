@@ -50,6 +50,12 @@ interface ZoneMariaDbDao : ZoneDao {
                 :zone.region,
                 :zone.country
             )
+            ON DUPLICATE KEY UPDATE
+              name = :zone.name,
+              latitude = :zone.lat,
+              longitude = :zone.long,
+              region = :zone.region,
+              country = :zone.country
             """
     )
     override fun storeZone(@BindBean("zone") zone: ZoneInfo)

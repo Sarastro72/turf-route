@@ -7,10 +7,10 @@ import io.ktor.features.BadRequestException
 import io.ktor.features.CORS
 import io.ktor.features.NotFoundException
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.resource
 import io.ktor.http.content.resources
 import io.ktor.http.content.static
 import io.ktor.response.respond
-import io.ktor.response.respondText
 import io.ktor.routing.get
 import io.ktor.routing.routing
 import io.ktor.utils.io.core.toByteArray
@@ -22,10 +22,6 @@ fun Application.configureRouting() {
     }
 
     routing {
-        get("/") {
-            call.respondText("Hello World!")
-        }
-
         get("/zone/id/{zoneId}") {
             call.parameters["zoneId"]?.toInt()
                 ?.let { queryManager.fetchZoneById(it) }
@@ -62,8 +58,8 @@ fun Application.configureRouting() {
             call.respond(queryManager.routeTo(from, to) ?: throw NotFoundException())
         }
 
-        // Static feature. Try to access `/static/ktor_logo.svg`
-        static("/static") {
+        static("/") {
+            resource("/", "static/index.html")
             resources("static")
         }
     }

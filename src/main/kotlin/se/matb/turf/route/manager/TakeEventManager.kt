@@ -87,14 +87,14 @@ class TakeEventManager(
 
     private fun handleEvents(events: List<TakeOver>) {
         if (events.isNotEmpty()) {
-            LOG.info { "Handling ${events.size} new takes since $lastEventTime" }
+            LOG.info { "+++ Handling ${events.size} new takes since $lastEventTime" }
             lastEventTime = events[0].time
             events.reversed().forEach { take ->
+                take.zone.run {
+                    // Keep zone data updated
+                    zoneDao.storeZone(ZoneInfo(id, name, latitude, longitude, region.name, region.country))
+                }
                 playerCache.getIfPresent(take.currentOwner.id)?.let { lastTake ->
-                    take.zone.run {
-                        // Keep zone data updated
-                        zoneDao.storeZone(ZoneInfo(id, name, latitude, longitude, region.name, region.country))
-                    }
                     val time = Duration.between(lastTake.time, take.time).toSeconds().toInt()
                     val route = routeDao.getRoute(lastTake.zoneId, take.zone.id)
                         ?: RouteInfo(lastTake.zoneId, take.zone.id)

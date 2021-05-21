@@ -6,7 +6,7 @@ const options = {
     lat: 59.331,
     lng: 18.03,
     zoom: 14,
-    style: "http://{s}.tile.osm.org/{z}/{x}/{y}.png"
+    style: "https://{s}.tile.osm.org/{z}/{x}/{y}.png"
 }
 
 function initZoneMap(callback) {
@@ -46,19 +46,19 @@ function drawZone(zone) {
 function drawRoutes(zone) {
     let count = 0
     if (zone.routes) {
-        const zPos = myMap.latLngToPixel(zone.lat, zone.long);
+        const fromPos = myMap.latLngToPixel(zone.lat, zone.long);
         zone.routes.forEach(r => {
                 if (r.weight > 0) {
                     const toPos = myMap.latLngToPixel(r.toLat, r.toLong);
-                    if (abs(zPos.x - toPos.x) + abs(zPos.y - toPos.y) > 10) {
-                        const off = delta(zPos, toPos, 5)
-                        const norm = normal(zPos, toPos, 10)
+                    if (abs(fromPos.x - toPos.x) + abs(fromPos.y - toPos.y) > 10) {
+                        const off = delta(fromPos, toPos, 5)
+                        const norm = normal(fromPos, toPos, 10)
                         setStyleFromWeight(r.weight)
                         bezier(
-                            zPos.x,
-                            zPos.y,
-                            zPos.x + off.x + norm.x,
-                            zPos.y + off.y + norm.y,
+                            fromPos.x,
+                            fromPos.y,
+                            fromPos.x + off.x + norm.x,
+                            fromPos.y + off.y + norm.y,
                             toPos.x - off.x + norm.x,
                             toPos.y - off.y + norm.y,
                             toPos.x,

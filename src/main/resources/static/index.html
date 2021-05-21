@@ -21,7 +21,7 @@
             fetchJob = null
             let sw = bounds.sw
             let ne = bounds.ne
-            fetch(`http://localhost:8080/zone/area/${sw.lat}/${sw.long}/${ne.lat}/${ne.long}`)
+            fetch(`/zone/area/${sw.lat}/${sw.long}/${ne.lat}/${ne.long}`)
                 .then(response => response.json())
                 .then(zones => {
                     let nRoutes = 0

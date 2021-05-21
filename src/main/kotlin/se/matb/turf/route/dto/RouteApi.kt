@@ -3,6 +3,7 @@ package se.matb.turf.route.dto
 import se.matb.turf.route.dao.model.RouteInfo
 import se.matb.turf.route.dao.model.ZoneInfo
 import java.time.Instant
+import kotlin.math.max
 import kotlin.math.min
 
 data class ZoneDto(
@@ -60,18 +61,18 @@ data class RouteToDto(
 
         fun calculateWeight(routeRecords: Int, zoneRecords: Int, numberRoutes: Int): Int {
             //println("calculateWeight($routeRecords, $zoneRecords, $numberRoutes)")
-            val part = 100 / numberRoutes
-            val percent = 100 * routeRecords / zoneRecords
-            if (percent < WEIGHT_LIMIT) return 0
-            val weight = if (percent <= part) {
-                1 + 4 * percent / part
+            val evenDistribution = max(100 / numberRoutes, 25) // Consider max 4 routes
+            val routePart = 100 * routeRecords / zoneRecords
+            if (routePart < WEIGHT_LIMIT) return 0
+            val weight = if (routePart <= evenDistribution) {
+                1 + 4 * routePart / evenDistribution
             } else {
-                5 + (percent - part) * 5 / (100 - part)
+                5 + (routePart - evenDistribution) * 5 / (100 - evenDistribution)
             }
             //println("$percent / $part => ${min(weight, min(10, routeRecords))} ($weight)")
             return min(
                 weight,
-                min(10, routeRecords)
+                min(10, max(zoneRecords / 2, 3)) // min 20 traverses for max weight
             )
         }
     }

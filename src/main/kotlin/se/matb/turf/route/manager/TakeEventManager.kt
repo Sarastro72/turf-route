@@ -126,10 +126,12 @@ class TakeEventManager(
 
     private fun logStats() {
         if (statCounter++ % 4 == 0) {
+            val traverses = routeDao.getAllRoutes().sumOf { it.times.size }
             LOG.info { "/--------------- Stats ----------------" }
             LOG.info { "| Known zones: ${zoneDao.countZones()}" }
-            LOG.info { "| Known routes: ${routeDao.countRoutes()}" }
-            LOG.info { "| Active players: ${playerCache.size()}" }
+            LOG.info { "| Registered traverses: $traverses" }
+            LOG.info { "| Registered routes: ${routeDao.countRoutes()}" }
+            LOG.info { "| Active players (30m): ${playerCache.size()}" }
             LOG.info { "\\--------------------------------------" }
         }
     }

@@ -17,7 +17,7 @@ function initZoneMap(callback) {
     myMap = L.map('mapId').setView([options.lat, options.lng], options.zoom);
     L.tileLayer(options.style, {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        maxZoom: 18
+        maxZoom: 17
     }).addTo(myMap);
     zoneLayer = L.layerGroup().addTo(myMap);
 
@@ -53,16 +53,37 @@ function getMapBounds() {
 function drawZone(zone) {
     let z = L.circle(
         [zone.lat, zone.long],
-        {
-            radius: 30,
-            weight: 1,
-            color: "#000000",
-            fillOpacity: 1,
-            fillColor: "#ff6644"
-        }
+        zoneOptionFromZoom()
     )
-    z.bindTooltip(zone.name)
+    let exits = 0
+    if (zone.routes) {
+        zone.routes.forEach(r => {
+            if (r.weight >= WEIGHT_FILTER) exits++
+        })
+        z.bindTooltip(zone.name)
+        z.bindPopup(
+            `<b>${zone.name}</b><br>` +
+            `Exits: ${exits}`
+        )
+    }
     z.addTo(zoneLayer)
+}
+
+function zoneOptionFromZoom() {
+    let zoom = myMap.getZoom();
+    let opacity = 1
+    if (zoom === 12) opacity = 0.66
+    else if (zoom === 11) opacity = 0.33
+    else if (zoom <= 10) opacity = 0.0
+
+    return {
+        radius: 30 * Math.pow(1.6, 14 - zoom),
+        weight: 1,
+        color: "#000000",
+        opacity: opacity,
+        fillOpacity: 1,
+        fillColor: "#ff6644"
+    }
 }
 
 function drawRoutes(zone) {

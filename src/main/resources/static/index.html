@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8"/>
     <title>Turf Routes 𝛼</title>
-    
+
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
@@ -30,7 +30,10 @@
 <script>
     const BASE_URL = "" //http://localhost:8080"
     const REDRAW_DELAY = 200
+    const MAX_ZONES = 5000
+    const MARGIN = 40
     let fetchJob = null
+    let acc = 0
 
     function refreshMap(bounds) {
         if (fetchJob) clearTimeout(fetchJob)
@@ -38,16 +41,35 @@
             fetchJob = null
             let sw = bounds.sw
             let ne = bounds.ne
-            preReDraw()
-            fetch(`${BASE_URL}/zone/area/${sw.lat}/${sw.long}/${ne.lat}/${ne.long}`)
+            let latMargin = (ne.lat - sw.lat) / MARGIN
+            let longMargin = (ne.long - sw.long) / MARGIN
+            fetch(`${BASE_URL}/zone/area/${sw.lat - latMargin}/${sw.long - longMargin}/${ne.lat + latMargin}/${ne.long + longMargin}`)
                 .then(response => response.json())
                 .then(zones => {
+                    let frac = MAX_ZONES / zones.length
+                    acc = 0;
+                    preReDraw()
                     let nRoutes = 0
+                    let nZones = 0
                     zones.forEach(z => nRoutes += drawRoutes(z))
-                    zones.forEach(z => drawZone(z))
-                    console.log(`Drew ${zones.length} zones and ${nRoutes} routes`)
+                    zones.forEach(z => {
+                        if (shouldDraw(frac)) {
+                            drawZone(z)
+                            nZones++
+                        }
+                    })
+                    console.log(`Drew ${nZones}/${zones.length} zones and ${nRoutes} routes`)
                 });
         }, REDRAW_DELAY)
+    }
+
+    function shouldDraw(frac) {
+        acc += frac
+        if (acc >= 1) {
+            acc -= 1
+            return true
+        }
+        return false
     }
 
     initZoneMap(refreshMap)

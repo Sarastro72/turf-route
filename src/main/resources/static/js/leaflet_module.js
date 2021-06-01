@@ -77,7 +77,7 @@ function zoneOptionFromZoom() {
     else if (zoom <= 10) opacity = 0.0
 
     return {
-        radius: 30 * Math.pow(1.6, 14 - zoom),
+        radius: 30 * Math.pow(1.7, 14 - zoom),
         weight: 1,
         color: "#000000",
         opacity: opacity,

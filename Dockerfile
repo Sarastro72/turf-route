@@ -14,7 +14,7 @@ WORKDIR /
 ENV DB_URL="jdbc:mariadb://localhost:3306/turf_route"
 ENV DB_PASS=redacted
 
-COPY build/libs/turf-route-0.0.1.jar turf-route.jar
+COPY build/libs/turf-route-${version}.jar turf-route.jar
 
 CMD java -jar turf-route.jar
 

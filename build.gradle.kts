@@ -6,7 +6,7 @@ val jdbi_version: String by project
 
 plugins {
     application
-    kotlin("jvm") version "1.5.0"
+    kotlin("jvm") version "1.6.10"
 }
 
 group = "se.matb"

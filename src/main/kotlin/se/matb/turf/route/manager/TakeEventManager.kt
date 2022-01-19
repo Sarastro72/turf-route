@@ -57,6 +57,7 @@ class TakeEventManager(
     private suspend fun takeLoop() {
         preLoadPlayerCache()
         LOG.info { "Starting take loop with last updated timestamp = $lastEventTime" }
+        delay(2000) // Respect 1 call per second limitation of API
         while (running) {
             kotlin.runCatching {
                 val events = turfApiClient.fetchEvents(lastEventTime)

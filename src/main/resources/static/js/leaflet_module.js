@@ -1,4 +1,5 @@
 const WEIGHT_FILTER = 2
+const PANEL_HIDE_TIME = 5000
 const toRad = Math.PI / 180
 
 let myMap
@@ -7,6 +8,7 @@ let refreshCb
 let llFactor = 1
 let zones = []
 let selectedZone = null
+let panelJob = null
 
 const options = {
     lat: 59.331,
@@ -128,6 +130,7 @@ function drawRoutesInternal(zone, alpha = 1, weightLimit = WEIGHT_FILTER, minWei
                     })
                     .on('mouseout', e => {
                         e.target.setStyle({opacity: 0})
+                        hidePanel()
                     })
                     .on('click', e => {
                         console.log(zone)
@@ -164,16 +167,41 @@ function reDrawZones(alpha = 1) {
     zones.forEach(zone => drawZone(zone, alpha))
 }
 
-function infoPanel(z, r) {
+function hidePanel() {
+    panelJob = setTimeout(removePanel, PANEL_HIDE_TIME)
+}
+
+function removePanel() {
     const old = document.getElementById("infoPanel");
     if (old) document.body.removeChild(old);
+}
 
+function infoPanel(z, r) {
+    removePanel()
+    if (panelJob) {
+        clearTimeout(panelJob)
+        panelJob = null
+    }
     const infoPanel = document.createElement("div");
     infoPanel.id = "infoPanel"
     infoPanel.style.cssText = 'position:absolute;right: 10px;width:20%;height:20%;opacity:1;z-index:100;background:#ffffff;';
-    infoPanel.innerHTML = `<b>${z.name}</b> to <b>${r.toName}</b><br><b>Times recorded: </b>${r.timesRun}<br>` +
-        `<b>Median time:</b> ${r.medTime}<br><b>Average time:</b> ${r.avgTime}<br><b>Fastest time:</b> ${r.fastestTime} by <b>${r.fastestUser}</b>`;
+    const distance = r.distance - (r.distance % 10)
+    infoPanel.innerHTML = `<b>${z.name}</b> to <b>${r.toName}</b><br>` +
+        `<b>Distance: </b>${distance}m<br>` +
+        `<b>Times recorded: </b>${r.timesRun}<br>` +
+        `<b>Median time:</b> ${tm(r.medTime)}<br>` +
+        `<b>Average time:</b> ${tm(r.avgTime)}<br>` +
+        `<b>Fastest time:</b> ${tm(r.fastestTime)} by <b>${r.fastestUser}</b>`;
     document.body.appendChild(infoPanel);
+}
+
+function tm(seconds) {
+    if (seconds < 60) {
+        return `${seconds}s`
+    }
+    const min = Math.floor(seconds / 60)
+    const sec = seconds % 60
+    return `${min}m ${sec}s`
 }
 
 const alphas = [0, 0.5, 0.75, 1, 1, 1, 1, 1, 1, 1, 1]

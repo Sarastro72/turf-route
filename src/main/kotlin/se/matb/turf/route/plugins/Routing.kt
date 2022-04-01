@@ -38,10 +38,10 @@ fun Application.configureRouting() {
         }
 
         get("/zone/area/{swLat}/{swLong}/{neLat}/{neLong}") {
-            val swLat = call.parameters["swLat"]?.toDoubleOrNull() ?: throw BadRequestException("Missing parameter")
-            val swLong = call.parameters["swLong"]?.toDoubleOrNull() ?: throw BadRequestException("Missing parameter")
-            val neLat = call.parameters["neLat"]?.toDoubleOrNull() ?: throw BadRequestException("Missing parameter")
-            val neLong = call.parameters["neLong"]?.toDoubleOrNull() ?: throw BadRequestException("Missing parameter")
+            val swLat = call.parameters["swLat"]?.toDoubleOrNull() ?: throw BadRequestException("Bad or missing parameter")
+            val swLong = call.parameters["swLong"]?.toDoubleOrNull() ?: throw BadRequestException("Bad or missing parameter")
+            val neLat = call.parameters["neLat"]?.toDoubleOrNull() ?: throw BadRequestException("Bad or missing parameter")
+            val neLong = call.parameters["neLong"]?.toDoubleOrNull() ?: throw BadRequestException("Bad or missing parameter")
 
             call.respond(queryManager.fetchZonesByArea(swLat, swLong, neLat, neLong))
         }

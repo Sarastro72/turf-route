@@ -5,6 +5,7 @@ import se.matb.turf.route.dao.model.ZoneInfo
 import java.time.Instant
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 data class ZoneDto(
     val id: Int,
@@ -33,6 +34,7 @@ data class RouteToDto(
     val toName: String,
     val toLat: Double,
     val toLong: Double,
+    val distance: Int,
     val timesRun: Int,
     val avgTime: Int,
     val medTime: Int,
@@ -42,16 +44,23 @@ data class RouteToDto(
     val weight: Int
 ) {
     companion object {
-        fun from(r: RouteInfo, z: ZoneInfo, totalExits: Int, totalRoutes: Int) =
+        fun from(
+            r: RouteInfo,
+            z: ZoneInfo,
+            totalExits: Int,
+            totalRoutes: Int,
+            distance: Double
+        ) =
             RouteToDto(
                 r.toZone,
                 z.name,
                 z.lat,
                 z.long,
+                (distance * 1000).roundToInt(), // meters
                 r.times.size,
-                r.avg(),
-                r.med(),
-                r.min(),
+                r.avg,
+                r.med,
+                r.fastest,
                 r.fastestUser,
                 r.fastestTimestamp,
                 calculateWeight(r.times.size, totalExits, totalRoutes)

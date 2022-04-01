@@ -64,7 +64,8 @@ class QueryManager(
         val routes = originalRoutes.map { route ->
             val toZone = zoneDao.lookupZone(route.toZone)
                 ?: throw NotFoundException("Found no zone of id ${route.toZone}")
-            RouteToDto.from(route, toZone, totalExits, originalRoutes.size)
+            val distance = distance(zone.lat, zone.long, toZone.lat, toZone.long)
+            RouteToDto.from(route, toZone, totalExits, originalRoutes.size, distance)
         }
         return zone.copy(routes = routes)
     }

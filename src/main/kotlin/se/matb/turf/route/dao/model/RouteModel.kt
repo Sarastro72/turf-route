@@ -7,7 +7,6 @@ import java.sql.ResultSet
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneOffset
-import kotlin.math.max
 
 data class TakeInfo(
     val zoneId: Int,
@@ -22,7 +21,7 @@ data class ZoneInfo(
     val region: String,
     val country: String,
 ) {
-    class ZoneRowMapper() : RowMapper<ZoneInfo> {
+    class ZoneRowMapper : RowMapper<ZoneInfo> {
         override fun map(rs: ResultSet, ctx: StatementContext): ZoneInfo = with(rs) {
             ZoneInfo(
                 getInt("id"),
@@ -39,61 +38,102 @@ data class ZoneInfo(
 data class RouteInfo(
     val fromZone: Int,
     val toZone: Int,
-    val times: MutableList<Int> = ArrayList(),
+    val times: Times,
     var fastestUser: String = "",
     var fastestTimestamp: Instant = Instant.now(),
     val updated: Instant = Instant.now()
 ) {
     companion object : Logging()
 
-    val timesString: String
-        get() = times.joinToString(",")
-    val fastestTime: Int
-        get() = times[0]
+    val fastest: Int
+        get() = times.fastest()
 
-    // Sorted insert
-    fun addTime(time: Int, user: String = "-", timestamp: Instant = Instant.now()) {
-        if (times.isEmpty()) {
-            times.add(time)
-            fastestUser = user
-            fastestTimestamp = timestamp
-            return
-        }
-        var pos = times.size / 2
-        var step = pos
-        while (true) {
-            step = max(step / 2, 1)
-            when {
-                pos == times.size -> break
-                pos == 0 && times[0] >= time -> break
-                times[pos] < time -> pos += step
-                times[pos - 1] > time -> pos -= step
-                else -> break
+    val avg: Int
+        get() = times.avg()
+
+    val med: Int
+        get() = times.med()
+
+    val size: Int
+        get() = times.size
+
+    fun time(i: Int) = times.get(i)
+
+    class Times(str: String) {
+        val times: MutableList<Pair<Int, Int>>
+        var size: Int
+
+        init {
+            if (str.contains(":")) {
+                times = str
+                    .split(",")
+                    .map {
+                        it.split(":").let { p ->
+                            Pair(p[0].toInt(), p.getOrNull(1)?.toInt() ?: 1)
+                        }
+                    }
+                    .toMutableList()
+            } else {
+                times = ArrayList()
+                str.split(",").forEach { add(it.toInt()) }
             }
+            size = times.sumOf { it.second }
         }
-        if (time < times[0]) {
-            fastestUser = user
-            fastestTimestamp = timestamp
+
+        fun add(time: Int) {
+            if (times.isEmpty()) {
+                times.add(Pair(time, 1))
+            } else {
+                for ((i, t) in times.withIndex()) {
+                    if (time == t.first) {
+                        times[i] = Pair(time, t.second + 1)
+                        break
+                    }
+                    if (time < t.first) {
+                        times.add(i, Pair(time, 1))
+                        break
+                    }
+                    if (i == times.size - 1) {
+                        times.add(Pair(time, 1))
+                        break
+                    }
+                }
+            }
+            size++
         }
-        times.add(pos, time)
-    }
 
-    fun avg(): Int {
-        return if (times.isEmpty()) 5949
-        else times.sum() / times.size
-    }
+        fun get(i: Int): Int {
+            var acc = 0
+            for (t in times) {
+                acc += t.second
+                if (acc > i)
+                    return t.first
+            }
+            throw IndexOutOfBoundsException("Index i out of bounds for size $size")
+        }
 
-    fun med(): Int {
-        return if (times.isEmpty()) 5949
-        else times.toList()[times.size / 2]
-    }
+        fun fastest() = times[0].first
 
-    fun min(): Int {
-        return times.firstOrNull() ?: 5949
-    }
+        fun avg() = times.sumOf { it.first } / size
 
-    fun max(): Int {
-        return times.lastOrNull() ?: 5949
+        fun med(): Int {
+            val target = size / 2
+            var pos = 0
+            for (t in times) {
+                pos += t.second
+                if (pos >= target)
+                    return t.first
+            }
+            return -1
+        }
+
+        override fun toString(): String =
+            times.joinToString(",") {
+                if (it.second == 1)
+                    "${it.first}"
+                else
+                    "${it.first}:${it.second}"
+            }
     }
 
     class RouteRowMapper : RowMapper<RouteInfo> {
@@ -101,7 +141,7 @@ data class RouteInfo(
             RouteInfo(
                 getInt("fromZone"),
                 getInt("toZone"),
-                getString("times").split(",").map(String::toInt).toMutableList(),
+                Times(getString("times")),
                 getString("fastestUser"),
                 getObject("fastestTimestamp", LocalDateTime::class.java).toInstant(ZoneOffset.UTC),
                 getObject("updated", LocalDateTime::class.java).toInstant(ZoneOffset.UTC),

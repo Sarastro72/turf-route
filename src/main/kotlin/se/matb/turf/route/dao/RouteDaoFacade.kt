@@ -15,7 +15,6 @@ class RouteDaoFacade(val routeDao: RouteDao) : RouteDao {
         .expireAfterWrite(60, TimeUnit.MINUTES)
         .build(CacheLoader.from { id -> routeDao.lookupRoutesByFromZone(id!!) })
 
-
     override fun getRoute(from: Int, to: Int): RouteInfo? =
         routeDao.getRoute(from, to)
 

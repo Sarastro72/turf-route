@@ -4,15 +4,16 @@ import org.jdbi.v3.core.argument.AbstractArgumentFactory
 import org.jdbi.v3.core.argument.Argument
 import org.jdbi.v3.core.config.ConfigRegistry
 import org.jdbi.v3.core.statement.StatementContext
+import se.matb.turf.route.dao.model.RouteInfo
 import java.sql.PreparedStatement
 import java.sql.Types
 
-class IntListArgument(private val value: MutableList<Int>?) : Argument {
+class StringArgument(private val value: Any) : Argument {
     override fun apply(position: Int, statement: PreparedStatement, ctx: StatementContext) =
-        statement.setString(position, value?.joinToString(","))
+        statement.setString(position, value.toString())
 }
 
-class TimesArgumentFactory : AbstractArgumentFactory<MutableList<Int>>(Types.VARCHAR) {
-    override fun build(value: MutableList<Int>, config: ConfigRegistry): Argument =
-        IntListArgument(value)
+class TimesArgumentFactory : AbstractArgumentFactory<RouteInfo.Times>(Types.VARCHAR) {
+    override fun build(value: RouteInfo.Times, config: ConfigRegistry): Argument =
+        StringArgument(value)
 }

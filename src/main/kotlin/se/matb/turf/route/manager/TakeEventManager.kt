@@ -98,8 +98,13 @@ class TakeEventManager(
                 playerCache.getIfPresent(take.currentOwner.id)?.let { lastTake ->
                     val time = Duration.between(lastTake.time, take.time).toSeconds().toInt()
                     val route = routeDao.getRoute(lastTake.zoneId, take.zone.id)
-                        ?: RouteInfo(lastTake.zoneId, take.zone.id)
-                    route.addTime(time, take.currentOwner.name, take.time)
+                        ?: RouteInfo(
+                            lastTake.zoneId,
+                            take.zone.id,
+                            RouteInfo.Times("$time"),
+                            take.currentOwner.name,
+                            take.time
+                        )
                     routeDao.storeRoute(route)
                     logRoute(lastTake, take, route, time)
                 }
@@ -111,12 +116,14 @@ class TakeEventManager(
 
     private fun logRoute(lastTake: TakeInfo, take: TakeOver, route: RouteInfo, time: Int) {
         kotlin.runCatching {
+            val speed = queryManager.routeSpeed(lastTake.zoneId, take.zone.id, time).toInt()
             var logString = "${take.zone.region.name}: ${zoneDao.lookupZone(lastTake.zoneId)?.name} " +
                 "-> ${take.zone.name} ${niceTime(time)} " +
-                "${queryManager.routeSpeed(lastTake.zoneId, take.zone.id, time).toInt()}km/h " +
-                "${take.currentOwner.name} – ${route.times.size} ${route.times[0]}/${route.med()}/${route.avg()}"
+                "${speed}km/h " +
+                "${take.currentOwner.name} – ${route.size} ${route.fastest}/${route.med}/${route.avg}"
             if (route.times.size == 1) logString += " 🆕"
-            if (route.times.size > 1 && time < route.times[1]) logString += " 🥇"
+            if (route.times.size > 1 && route.time(1) > time) logString += " 🥇"
+            if (speed > 50) logString += " 🚨"
             LOG.info { logString }
         }.onFailure { ex ->
             LOG.warn(ex) {

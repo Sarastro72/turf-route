@@ -99,7 +99,7 @@ class QueryManager(
                             RouteState(
                                 route.toZone,
                                 thisState.length + 1,
-                                thisState.time + route.avg(),
+                                thisState.time + route.avg,
                                 thisState.comparator,
                                 thisState.path + thisState.zoneId
                             )

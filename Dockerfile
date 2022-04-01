@@ -11,6 +11,9 @@ EXPOSE 8080
 
 WORKDIR /
 
+RUN apk update && apk add tzdata
+
+ENV TZ="Europe/Stockholm"
 ENV DB_URL="jdbc:mariadb://localhost:3306/turf_route"
 ENV DB_PASS="redacted"
 ENV START_MEM="256m"

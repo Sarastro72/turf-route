@@ -29,7 +29,7 @@ class ApplicationTest {
     fun `test deserialize`() {
         val objectMapper = ObjectMapper()
             .registerModule(JavaTimeModule())
-            .registerModule(KotlinModule())
+            .registerModule(KotlinModule.Builder().build())
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .configure(SerializationFeature.WRITE_DATE_TIMESTAMPS_AS_NANOSECONDS, false)
             .configure(DeserializationFeature.READ_DATE_TIMESTAMPS_AS_NANOSECONDS, false)

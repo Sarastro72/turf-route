@@ -2,7 +2,8 @@ package se.matb.turf.route.manager
 
 import com.google.common.cache.Cache
 import com.google.common.cache.CacheBuilder
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -43,7 +44,7 @@ class TakeEventManager(
         if (!running) {
             running = true
             finished = false
-            GlobalScope.launch { takeLoop() }
+            CoroutineScope(Dispatchers.IO).launch { takeLoop() }
         }
     }
 

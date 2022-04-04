@@ -6,7 +6,7 @@ val jdbi_version: String by project
 
 plugins {
     application
-    kotlin("jvm") version "1.6.10"
+    kotlin("jvm") version "1.6.20"
 }
 
 group = "se.matb"
@@ -40,6 +40,7 @@ dependencies {
     implementation("org.mariadb.jdbc:mariadb-java-client:2.7.2")
     testImplementation("org.assertj:assertj-core:3.19.0")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
 }
 
 tasks.jar {

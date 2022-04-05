@@ -43,17 +43,45 @@ class RouteInfoTest {
     }
 
     @Test
-    fun `times should have correct size`() {
-        val input = "5,6,7:3,10:2"
-        val times = RouteInfo.Times(input)
-        assertThat(times.size).isEqualTo(7)
-    }
-
-    @Test
     fun `times should write to mixed format`() {
         val input = "5,6,7:3,8:3,9:2,10"
         val times = RouteInfo.Times(input)
         assertThat(times.toString()).isEqualTo(input)
+    }
+
+    @Test
+    fun `times should have correct size`() {
+        val input = "5,6,7:3,8:3,9:2,10"
+        val times = RouteInfo.Times(input)
+        assertThat(times.size).isEqualTo(11)
+    }
+
+    @Test
+    fun `times should have correct fastest time`() {
+        val input = "5,6,7:3,8:3,9:2,10"
+        val times = RouteInfo.Times(input)
+        assertThat(times.fastest()).isEqualTo(5)
+    }
+
+    @Test
+    fun `times should have correct average`() {
+        val input = "5,6,7:3,8:3,9:2,10"
+        val times = RouteInfo.Times(input)
+        assertThat(times.avg()).isEqualTo(7)
+    }
+
+    @Test
+    fun `times should have correct median odd size`() {
+        val input = "5,6,7:3,8:3,9:2,10"
+        val times = RouteInfo.Times(input)
+        assertThat(times.med()).isEqualTo(8)
+    }
+
+    @Test
+    fun `times should have correct median even size`() {
+        val input = "5,6,7:3,8:3,9:2"
+        val times = RouteInfo.Times(input)
+        assertThat(times.med()).isEqualTo(7)
     }
 
     @Test

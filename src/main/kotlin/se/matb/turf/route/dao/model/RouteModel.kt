@@ -114,10 +114,10 @@ data class RouteInfo(
 
         fun fastest() = times[0].first
 
-        fun avg() = times.sumOf { it.first } / size
+        fun avg() = times.sumOf { it.first * it.second } / size
 
         fun med(): Int {
-            val target = size / 2
+            val target = (size + 1) / 2
             var pos = 0
             for (t in times) {
                 pos += t.second

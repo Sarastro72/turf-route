@@ -59,6 +59,14 @@ data class RouteInfo(
 
     fun time(i: Int) = times.get(i)
 
+    fun addTime(time: Int, user: String, timeStamp: Instant) {
+        if (time < fastest) {
+            fastestUser = user
+            fastestTimestamp = timeStamp
+        }
+        times.add(time)
+    }
+
     class Times(str: String) {
         val times: MutableList<Pair<Int, Int>>
         var size: Int

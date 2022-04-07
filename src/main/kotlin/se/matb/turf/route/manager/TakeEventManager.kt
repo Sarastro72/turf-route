@@ -99,10 +99,11 @@ class TakeEventManager(
                 playerCache.getIfPresent(take.currentOwner.id)?.let { lastTake ->
                     val time = Duration.between(lastTake.time, take.time).toSeconds().toInt()
                     val route = routeDao.getRoute(lastTake.zoneId, take.zone.id)
+                        ?.apply { addTime(time, take.currentOwner.name, take.time) }
                         ?: RouteInfo(
                             lastTake.zoneId,
                             take.zone.id,
-                            RouteInfo.Times("$time"),
+                            RouteInfo.Times(time.toString()),
                             take.currentOwner.name,
                             take.time
                         )

@@ -2,6 +2,7 @@ package se.matb.turf.route.manager
 
 import io.ktor.features.NotFoundException
 import se.matb.turf.logging.Logging
+import se.matb.turf.logging.Timer
 import se.matb.turf.route.dao.RouteDao
 import se.matb.turf.route.dao.ZoneDao
 import se.matb.turf.route.dto.RouteToDto
@@ -21,11 +22,6 @@ class QueryManager(
     companion object : Logging() {
         private const val KMFACTOR = 40000 / 360
         private const val RADFACTOR = PI / 180
-        fun distance(lat1: Double, long1: Double, lat2: Double, long2: Double): Double {
-            val latKM = (lat2 - lat1) * KMFACTOR
-            val longKM = (long2 - long1) * cos(lat1 * RADFACTOR) * KMFACTOR
-            return sqrt(latKM * latKM + longKM * longKM)
-        }
     }
 
     fun routeDistance(zoneId1: Int, zoneId2: Int): Double {
@@ -50,9 +46,12 @@ class QueryManager(
     }
 
     fun fetchZonesByArea(swLat: Double, swLong: Double, neLat: Double, neLong: Double): List<ZoneDto> {
+        val timer = Timer.start("fetchZonesByArea")
         val zones = zoneDao.lookupZonesInArea(swLat, swLong, neLat, neLong).map(ZoneDto::from)
+        timer.time("Fetch zones")
         if (zones.size <= MAX_ZONES_WITH_ROUTES) {
             return zones.map(this::decorateZoneWithRoutes)
+                .also { timer.time("Decorate ${zones.size} zones") }
         } else {
             return zones
         }
@@ -68,6 +67,12 @@ class QueryManager(
             RouteToDto.from(route, toZone, totalExits, originalRoutes.size, distance)
         }
         return zone.copy(routes = routes)
+    }
+
+    private fun distance(lat1: Double, long1: Double, lat2: Double, long2: Double): Double {
+        val latKM = (lat2 - lat1) * KMFACTOR
+        val longKM = (long2 - long1) * cos(lat1 * RADFACTOR) * KMFACTOR
+        return sqrt(latKM * latKM + longKM * longKM)
     }
 
     fun routeTo(

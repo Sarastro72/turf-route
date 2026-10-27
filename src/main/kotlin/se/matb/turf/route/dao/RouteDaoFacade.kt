@@ -27,7 +27,7 @@ class RouteDaoFacade(val routeDao: RouteDao) : RouteDao {
     override fun storeRoute(route: RouteInfo) {
         routeDao.storeRoute(route)
         // Force update cache
-        routesCache.put(route.fromZone, routeDao.lookupRoutesByFromZone(route.fromZone))
+        routesCache.invalidate(route.fromZone)
     }
 
     override fun getAllRoutes(): Collection<RouteInfo> =

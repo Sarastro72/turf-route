@@ -2,15 +2,15 @@ package se.matb.turf.logging
 
 import kotlin.time.Duration.Companion.milliseconds
 
-class Timer private constructor(val name: String) {
+class Timer private constructor(val name: String, val silent: Boolean = false) {
     val start: Long = System.currentTimeMillis()
     var last: Long = start
 
     companion object : Logging() {
         private val timers: MutableMap<String, Timer> = HashMap()
 
-        fun start(name: String): Timer {
-            return Timer(name).also { timers[name] = it }
+        fun start(name: String, silent: Boolean = false): Timer {
+            return Timer(name, silent).also { timers[name] = it }
         }
 
         fun get(name: String): Timer {
@@ -27,11 +27,13 @@ class Timer private constructor(val name: String) {
         val time = now - last
         val total = now - start
         last = now
-        LOG.info("$name – $flag: ${time.milliseconds}, total: ${total.milliseconds}")
+        if (!silent) {
+            LOG.info("$name – $flag: ${time.milliseconds}, total: ${total.milliseconds}")
+        }
     }
 
-    fun stop(name :String) {
-        time("finished")
+    fun stop(flag: String = "finished") {
+        time(flag)
         remove(name)
     }
 }

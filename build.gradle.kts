@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
@@ -6,7 +8,7 @@ val jdbi_version: String by project
 
 plugins {
     application
-    kotlin("jvm") version "1.9.25"
+    kotlin("jvm") version "2.2.10"
 }
 
 group = "se.matb"
@@ -17,6 +19,10 @@ application {
 
 repositories {
     mavenCentral()
+}
+
+kotlin {
+    jvmToolchain(21)
 }
 
 dependencies {
@@ -37,10 +43,50 @@ dependencies {
     implementation("org.jdbi:jdbi3-sqlobject:$jdbi_version")
     implementation("org.jdbi:jdbi3-kotlin-sqlobject:$jdbi_version")
     implementation("org.jdbi:jdbi3-kotlin:$jdbi_version")
-    implementation("org.mariadb.jdbc:mariadb-java-client:2.7.2")
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.5.5")
+    implementation("org.flywaydb:flyway-core:13.10.0")
+    implementation("org.flywaydb:flyway-mysql:13.10.0")
     testImplementation("org.assertj:assertj-core:3.19.0")
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
+}
+
+// Several dependencies (e.g. flyway-core and flyway-mysql) register plugins in the same
+// META-INF/services file, so they must be merged rather than overwritten in the fat jar
+val mergeServiceFiles by tasks.registering {
+    val runtimeJars = configurations.runtimeClasspath
+    val outputDir = layout.buildDirectory.dir("merged-services")
+    inputs.files(runtimeJars)
+    outputs.dir(outputDir)
+
+    doLast {
+        val services = sortedMapOf<String, MutableSet<String>>()
+        runtimeJars.get()
+            .filter { it.name.endsWith("jar") }
+            .forEach { jar ->
+                ZipFile(jar).use { zip ->
+                    zip.entries()
+                        .asSequence()
+                        .filter { !it.isDirectory && it.name.startsWith("META-INF/services/") }
+                        .forEach { entry ->
+                            services.getOrPut(entry.name) { linkedSetOf() } += zip.getInputStream(entry)
+                                .bufferedReader()
+                                .readLines()
+                                .map { it.substringBefore('#').trim() }
+                                .filter { it.isNotEmpty() }
+                        }
+                }
+            }
+
+        val dir = outputDir.get().asFile
+        dir.deleteRecursively()
+        services.forEach { (name, providers) ->
+            dir.resolve(name).apply {
+                parentFile.mkdirs()
+                writeText(providers.joinToString("\n", postfix = "\n"))
+            }
+        }
+    }
 }
 
 tasks.jar {
@@ -51,8 +97,9 @@ tasks.jar {
     from(
         configurations.runtimeClasspath.get()
             .filter { it.name.endsWith("jar") }
-            .map { zipTree(it) }
+            .map { zipTree(it).matching { exclude("META-INF/services/**") } }
     )
+    from(mergeServiceFiles)
 
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }

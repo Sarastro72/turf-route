@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk11:alpine-jre
+FROM eclipse-temurin:21.0.8_9-jre-ubi9-minimal
 
 ARG version=0.0.1
 ARG tag=undefined
@@ -11,14 +11,13 @@ EXPOSE 8080
 
 WORKDIR /
 
-RUN apk update && apk add tzdata
-
 ENV TZ="Europe/Stockholm"
 ENV DB_URL="jdbc:mariadb://localhost:3306/turf_route"
+ENV DB_USER="turf_route"
 ENV DB_PASS="redacted"
 ENV START_MEM="256m"
 ENV MAX_MEM="1024m"
 
 COPY build/libs/turf-route-${version}.jar turf-route.jar
 
-CMD java -Xms$START_MEM -Xmx$MAX_MEM -jar turf-route.jar
+CMD exec java -Xms$START_MEM -Xmx$MAX_MEM -jar turf-route.jar

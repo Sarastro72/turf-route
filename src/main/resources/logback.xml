@@ -25,5 +25,6 @@
     </root>
     <logger name="se.matb.turf" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
+    <logger name="org.flywaydb" level="INFO"/>
 </configuration>
 

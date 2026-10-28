@@ -7,6 +7,7 @@ import se.matb.turf.logging.Logging
 import se.matb.turf.route.dao.model.RouteInfo
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+import java.util.function.Consumer
 
 class RouteDaoFacade(val routeDao: RouteDao) : RouteDao {
     companion object : Logging()
@@ -30,11 +31,8 @@ class RouteDaoFacade(val routeDao: RouteDao) : RouteDao {
         routesCache.invalidate(route.fromZone)
     }
 
-    override fun getAllRoutes(): Collection<RouteInfo> =
-        routeDao.getAllRoutes()
-
-    override fun countRoutes(): Int =
-        routeDao.countRoutes()
+    override fun forEachTimes(consumer: Consumer<String>) =
+        routeDao.forEachTimes(consumer)
 
     override fun getLastTimestamp(): Instant? =
         routeDao.getLastTimestamp()

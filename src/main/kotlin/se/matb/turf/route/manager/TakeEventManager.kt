@@ -17,6 +17,7 @@ import se.matb.turf.route.dao.model.TakeInfo
 import se.matb.turf.route.dao.model.ZoneInfo
 import java.time.Duration
 import java.time.Instant
+import kotlin.time.Duration.Companion.milliseconds
 
 const val INTERVAL_MILLIS: Long = 60000
 const val ROUTE_MAX_TIME_MINUTES: Long = 30
@@ -39,6 +40,8 @@ class TakeEventManager(
     private var finished = true
     private var lastEventTime: Instant? = routeDao.getLastTimestamp()
     private var statCounter = 0
+    private var routeCount = 0L
+    private var traverseCount = 0L
 
     fun start() {
         if (!running) {
@@ -56,6 +59,7 @@ class TakeEventManager(
     }
 
     private suspend fun takeLoop() {
+        countRoutesAndTraverses()
         preLoadPlayerCache()
         LOG.info { "Starting take loop with last updated timestamp = $lastEventTime" }
         delay(2000) // Respect 1 call per second limitation of API
@@ -69,6 +73,20 @@ class TakeEventManager(
         }
         LOG.info { "Take loop stopped with last event timestamp $lastEventTime" }
         finished = true
+    }
+
+    // Full table scan, so only done once at startup. The counts are then kept up to date in handleEvents.
+    private fun countRoutesAndTraverses() {
+        LOG.info { "Counting routes and traverses for stats, this may take a while. Take loop starts when done." }
+        val start = System.currentTimeMillis()
+        kotlin.runCatching {
+            routeDao.forEachTimes { times ->
+                routeCount++
+                traverseCount += RouteInfo.Times(times).size
+            }
+        }.onFailure { ex -> LOG.warn(ex) { "Failed to count routes due to ${ex::class.simpleName} – ${ex.message}" } }
+        val duration = (System.currentTimeMillis() - start).milliseconds
+        LOG.info { "Counted $routeCount routes and $traverseCount traverses in $duration" }
     }
 
     private fun preLoadPlayerCache() {
@@ -98,7 +116,8 @@ class TakeEventManager(
                 }
                 playerCache.getIfPresent(take.currentOwner.id)?.let { lastTake ->
                     val time = Duration.between(lastTake.time, take.time).toSeconds().toInt()
-                    val route = routeDao.getRoute(lastTake.zoneId, take.zone.id)
+                    val existingRoute = routeDao.getRoute(lastTake.zoneId, take.zone.id)
+                    val route = existingRoute
                         ?.apply { addTime(time, take.currentOwner.name, take.time) }
                         ?: RouteInfo(
                             lastTake.zoneId,
@@ -108,6 +127,8 @@ class TakeEventManager(
                             take.time
                         )
                     routeDao.storeRoute(route)
+                    traverseCount++
+                    if (existingRoute == null) routeCount++
                     logRoute(lastTake, take, route, time)
                 }
                 playerCache.put(take.currentOwner.id, TakeInfo(take.zone.id, take.time))
@@ -136,11 +157,10 @@ class TakeEventManager(
 
     private fun logStats() {
         if (statCounter++ % 4 == 0) {
-            val traverses = routeDao.getAllRoutes().sumOf { it.times.size }
             LOG.info { "/--------------- Stats ----------------" }
             LOG.info { "| Known zones: ${zoneDao.countZones()}" }
-            LOG.info { "| Registered traverses: $traverses" }
-            LOG.info { "| Registered routes: ${routeDao.countRoutes()}" }
+            LOG.info { "| Registered traverses: $traverseCount" }
+            LOG.info { "| Registered routes: $routeCount" }
             LOG.info { "| Active players (30m): ${playerCache.size()}" }
             LOG.info { "\\--------------------------------------" }
         }

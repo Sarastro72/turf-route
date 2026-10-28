@@ -1,3 +1,4 @@
+# check=skip=JSONArgsRecommended
 FROM eclipse-temurin:21.0.8_9-jre-ubi9-minimal
 
 ARG version=0.0.1

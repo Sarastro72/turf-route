@@ -14,6 +14,8 @@ import kotlin.math.cos
 import kotlin.math.sqrt
 
 const val MAX_ZONES_WITH_ROUTES = 2000
+// Routes below this weight aren't drawn in the map overview (WEIGHT_FILTER in leaflet_module.js), so they're not sent
+const val MIN_AREA_ROUTE_WEIGHT = 2
 const val LONGEST_PATH = 20
 
 class QueryManager(
@@ -54,8 +56,8 @@ class QueryManager(
             val routesByZone = routeDao.lookupRoutesInArea(swLat, swLong, neLat, neLong)
                 .groupBy { it.route.fromZone }
             timer.time("Fetch ${routesByZone.values.sumOf { it.size }} routes")
-            return zones.map { zone -> decorateZoneWithRoutes(zone, routesByZone[zone.id].orEmpty()) }
-                .also { timer.time("Decorate ${zones.size} zones") }
+            return zones.map { zone -> decorateZoneWithRoutes(zone, routesByZone[zone.id].orEmpty(), MIN_AREA_ROUTE_WEIGHT) }
+                .also { decorated -> timer.time("Decorate ${zones.size} zones, keeping ${decorated.sumOf { it.routes.orEmpty().size }} routes") }
         } else {
             return zones
         }
@@ -71,12 +73,15 @@ class QueryManager(
         return decorateZoneWithRoutes(zone, routes)
     }
 
-    private fun decorateZoneWithRoutes(zone: ZoneDto, routes: List<RouteWithDestination>): ZoneDto {
+    // Weights are calculated from all routes of the zone before routes below minWeight are dropped
+    private fun decorateZoneWithRoutes(zone: ZoneDto, routes: List<RouteWithDestination>, minWeight: Int = 0): ZoneDto {
         val totalExits = routes.sumOf { it.route.times.size }
-        val routeDtos = routes.map { (route, toZone) ->
-            val distance = distance(zone.lat, zone.long, toZone.lat, toZone.long)
-            RouteToDto.from(route, toZone, totalExits, routes.size, distance)
-        }
+        val routeDtos = routes
+            .map { (route, toZone) ->
+                val distance = distance(zone.lat, zone.long, toZone.lat, toZone.long)
+                RouteToDto.from(route, toZone, totalExits, routes.size, distance)
+            }
+            .filter { it.weight >= minWeight }
         return zone.copy(routes = routeDtos)
     }
 

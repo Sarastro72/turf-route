@@ -18,7 +18,8 @@ const options = {
 }
 
 function initZoneMap(callback) {
-    myMap = L.map('mapId').setView([options.lat, options.lng], options.zoom);
+    // Canvas draws thousands of zones and routes much faster than one SVG element each
+    myMap = L.map('mapId', {preferCanvas: true}).setView([options.lat, options.lng], options.zoom);
     L.tileLayer(options.style, {
         attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         maxZoom: 17
@@ -153,8 +154,14 @@ function selectZone(zone) {
     } else {
         selectedZone = zone.id
         reDrawZones(0.75)
-        drawRoutes(zone, 1, 0, 3)
-        drawZone(zone)
+        // The area data only has the routes drawn in the overview, so fetch all routes of the selected zone
+        fetch(`${BASE_URL}/zone/id/${zone.id}`)
+            .then(response => response.json())
+            .then(fullZone => {
+                if (selectedZone !== zone.id) return
+                drawRoutesInternal(fullZone, 1, 0, 3)
+                drawZone(zone)
+            })
     }
 }
 

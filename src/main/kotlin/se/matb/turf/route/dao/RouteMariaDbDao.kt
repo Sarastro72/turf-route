@@ -9,6 +9,7 @@ import org.jdbi.v3.sqlobject.statement.SqlQuery
 import org.jdbi.v3.sqlobject.statement.SqlUpdate
 import se.matb.turf.route.dao.db.TimesArgumentFactory
 import se.matb.turf.route.dao.model.RouteInfo
+import se.matb.turf.route.dao.model.RouteWithDestination
 import java.time.Instant
 import java.util.function.Consumer
 
@@ -38,6 +39,24 @@ interface RouteMariaDbDao : RouteDao {
     override fun lookupRoutesByFromZone(
         @Bind("fromZone") from: Int
     ): List<RouteInfo>
+
+    // All routes starting in the area, with their destination zone (t), in one query
+    @SqlQuery(
+        """SELECT $ROUTE_SELECT_COLUMNS, t.id, t.name, t.latitude, t.longitude, t.region, t.country
+        FROM zone f
+        JOIN route r ON r.fromZone = f.id
+        JOIN zone t ON t.id = r.toZone
+        WHERE f.latitude BETWEEN :swLat AND :neLat
+        AND f.longitude BETWEEN :swLong AND :neLong
+        """
+    )
+    @RegisterRowMapper(RouteWithDestination.RouteWithDestinationRowMapper::class)
+    override fun lookupRoutesInArea(
+        @Bind("swLat") swLat: Double,
+        @Bind("swLong") swLong: Double,
+        @Bind("neLat") neLat: Double,
+        @Bind("neLong") neLong: Double
+    ): List<RouteWithDestination>
 
     @SqlUpdate(
         """INSERT INTO route ($ROUTE_INSERT_COLUMNS)

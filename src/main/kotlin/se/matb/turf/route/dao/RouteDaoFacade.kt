@@ -5,6 +5,7 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import se.matb.turf.logging.Logging
 import se.matb.turf.route.dao.model.RouteInfo
+import se.matb.turf.route.dao.model.RouteWithDestination
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
@@ -24,6 +25,14 @@ class RouteDaoFacade(val routeDao: RouteDao) : RouteDao {
             LOG.warn(ex) { "Failed to find route originating from zone $from" }
             emptyList()
         }
+
+    override fun lookupRoutesInArea(
+        swLat: Double,
+        swLong: Double,
+        neLat: Double,
+        neLong: Double
+    ): List<RouteWithDestination> =
+        routeDao.lookupRoutesInArea(swLat, swLong, neLat, neLong)
 
     override fun storeRoute(route: RouteInfo) {
         routeDao.storeRoute(route)

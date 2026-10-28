@@ -5,6 +5,7 @@ import se.matb.turf.logging.Logging
 import se.matb.turf.logging.Timer
 import se.matb.turf.route.dao.RouteDao
 import se.matb.turf.route.dao.ZoneDao
+import se.matb.turf.route.dao.model.RouteWithDestination
 import se.matb.turf.route.dto.RouteToDto
 import se.matb.turf.route.dto.ZoneDto
 import java.lang.Math.PI
@@ -50,7 +51,10 @@ class QueryManager(
         val zones = zoneDao.lookupZonesInArea(swLat, swLong, neLat, neLong).map(ZoneDto::from)
         timer.time("Fetch zones")
         if (zones.size <= MAX_ZONES_WITH_ROUTES) {
-            return zones.map(this::decorateZoneWithRoutes)
+            val routesByZone = routeDao.lookupRoutesInArea(swLat, swLong, neLat, neLong)
+                .groupBy { it.route.fromZone }
+            timer.time("Fetch ${routesByZone.values.sumOf { it.size }} routes")
+            return zones.map { zone -> decorateZoneWithRoutes(zone, routesByZone[zone.id].orEmpty()) }
                 .also { timer.time("Decorate ${zones.size} zones") }
         } else {
             return zones
@@ -58,15 +62,22 @@ class QueryManager(
     }
 
     private fun decorateZoneWithRoutes(zone: ZoneDto): ZoneDto {
-        val originalRoutes = routeDao.lookupRoutesByFromZone(zone.id)
-        val totalExits = originalRoutes.sumOf { it.times.size }
-        val routes = originalRoutes.map { route ->
-            val toZone = zoneDao.lookupZone(route.toZone)
-                ?: throw NotFoundException("Found no zone of id ${route.toZone}")
+        val routes = routeDao.lookupRoutesByFromZone(zone.id)
+            .map { route ->
+                val toZone = zoneDao.lookupZone(route.toZone)
+                    ?: throw NotFoundException("Found no zone of id ${route.toZone}")
+                RouteWithDestination(route, toZone)
+            }
+        return decorateZoneWithRoutes(zone, routes)
+    }
+
+    private fun decorateZoneWithRoutes(zone: ZoneDto, routes: List<RouteWithDestination>): ZoneDto {
+        val totalExits = routes.sumOf { it.route.times.size }
+        val routeDtos = routes.map { (route, toZone) ->
             val distance = distance(zone.lat, zone.long, toZone.lat, toZone.long)
-            RouteToDto.from(route, toZone, totalExits, originalRoutes.size, distance)
+            RouteToDto.from(route, toZone, totalExits, routes.size, distance)
         }
-        return zone.copy(routes = routes)
+        return zone.copy(routes = routeDtos)
     }
 
     private fun distance(lat1: Double, long1: Double, lat2: Double, long2: Double): Double {

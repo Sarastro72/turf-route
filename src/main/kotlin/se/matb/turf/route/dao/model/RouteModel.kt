@@ -35,6 +35,20 @@ data class ZoneInfo(
     }
 }
 
+data class RouteWithDestination(
+    val route: RouteInfo,
+    val toZone: ZoneInfo
+) {
+    // Expects the route columns and the destination zone's columns under their own names in the same row
+    class RouteWithDestinationRowMapper : RowMapper<RouteWithDestination> {
+        private val routeMapper = RouteInfo.RouteRowMapper()
+        private val zoneMapper = ZoneInfo.ZoneRowMapper()
+
+        override fun map(rs: ResultSet, ctx: StatementContext): RouteWithDestination =
+            RouteWithDestination(routeMapper.map(rs, ctx), zoneMapper.map(rs, ctx))
+    }
+}
+
 data class RouteInfo(
     val fromZone: Int,
     val toZone: Int,

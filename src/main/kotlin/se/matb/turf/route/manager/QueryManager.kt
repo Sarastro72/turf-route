@@ -5,6 +5,7 @@ import se.matb.turf.logging.Logging
 import se.matb.turf.logging.Timer
 import se.matb.turf.route.dao.RouteDao
 import se.matb.turf.route.dao.ZoneDao
+import se.matb.turf.route.dao.model.RouteSummary
 import se.matb.turf.route.dao.model.RouteWithDestination
 import se.matb.turf.route.dto.RouteToDto
 import se.matb.turf.route.dto.ZoneDto
@@ -68,14 +69,14 @@ class QueryManager(
             .map { route ->
                 val toZone = zoneDao.lookupZone(route.toZone)
                     ?: throw NotFoundException("Found no zone of id ${route.toZone}")
-                RouteWithDestination(route, toZone)
+                RouteWithDestination(RouteSummary.from(route), toZone)
             }
         return decorateZoneWithRoutes(zone, routes)
     }
 
     // Weights are calculated from all routes of the zone before routes below minWeight are dropped
     private fun decorateZoneWithRoutes(zone: ZoneDto, routes: List<RouteWithDestination>, minWeight: Int = 0): ZoneDto {
-        val totalExits = routes.sumOf { it.route.times.size }
+        val totalExits = routes.sumOf { it.route.stats.timesRun }
         val routeDtos = routes
             .map { (route, toZone) ->
                 val distance = distance(zone.lat, zone.long, toZone.lat, toZone.long)

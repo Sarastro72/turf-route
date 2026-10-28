@@ -5,6 +5,7 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import se.matb.turf.logging.Logging
 import se.matb.turf.route.dao.model.RouteInfo
+import se.matb.turf.route.dao.model.RouteTimes
 import se.matb.turf.route.dao.model.RouteWithDestination
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -40,8 +41,14 @@ class RouteDaoFacade(val routeDao: RouteDao) : RouteDao {
         routesCache.invalidate(route.fromZone)
     }
 
-    override fun forEachTimes(consumer: Consumer<String>) =
-        routeDao.forEachTimes(consumer)
+    override fun forEachRouteTimes(consumer: Consumer<RouteTimes>) =
+        routeDao.forEachRouteTimes(consumer)
+
+    override fun lookupRoutesWithoutStats(afterFromZone: Int, afterToZone: Int, limit: Int): List<RouteTimes> =
+        routeDao.lookupRoutesWithoutStats(afterFromZone, afterToZone, limit)
+
+    override fun storeRouteStats(routes: List<RouteTimes>) =
+        routeDao.storeRouteStats(routes)
 
     override fun getLastTimestamp(): Instant? =
         routeDao.getLastTimestamp()

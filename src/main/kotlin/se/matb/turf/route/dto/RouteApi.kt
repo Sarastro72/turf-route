@@ -1,6 +1,6 @@
 package se.matb.turf.route.dto
 
-import se.matb.turf.route.dao.model.RouteInfo
+import se.matb.turf.route.dao.model.RouteSummary
 import se.matb.turf.route.dao.model.ZoneInfo
 import java.time.Instant
 import kotlin.math.max
@@ -45,7 +45,7 @@ data class RouteToDto(
 ) {
     companion object {
         fun from(
-            r: RouteInfo,
+            r: RouteSummary,
             z: ZoneInfo,
             totalExits: Int,
             totalRoutes: Int,
@@ -57,13 +57,13 @@ data class RouteToDto(
                 z.lat,
                 z.long,
                 (distance * 1000).roundToInt(), // meters
-                r.times.size,
-                r.avg,
-                r.med,
-                r.fastest,
+                r.stats.timesRun,
+                r.stats.avgTime,
+                r.stats.medTime,
+                r.stats.fastestTime,
                 r.fastestUser,
                 r.fastestTimestamp,
-                calculateWeight(r.times.size, totalExits, totalRoutes)
+                calculateWeight(r.stats.timesRun, totalExits, totalRoutes)
             )
 
         const val WEIGHT_LIMIT = 5

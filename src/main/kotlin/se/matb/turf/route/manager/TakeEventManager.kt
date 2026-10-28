@@ -79,14 +79,19 @@ class TakeEventManager(
     private fun countRoutesAndTraverses() {
         LOG.info { "Counting routes and traverses for stats, this may take a while. Take loop starts when done." }
         val start = System.currentTimeMillis()
+        var routesWithoutStats = 0L
         kotlin.runCatching {
-            routeDao.forEachTimes { times ->
+            routeDao.forEachRouteTimes { route ->
                 routeCount++
-                traverseCount += RouteInfo.Times(times).size
+                traverseCount += route.timesRun
+                if (route.stats == null) routesWithoutStats++
             }
         }.onFailure { ex -> LOG.warn(ex) { "Failed to count routes due to ${ex::class.simpleName} – ${ex.message}" } }
         val duration = (System.currentTimeMillis() - start).milliseconds
         LOG.info { "Counted $routeCount routes and $traverseCount traverses in $duration" }
+        if (routesWithoutStats > 0) {
+            CoroutineScope(Dispatchers.IO).launch { RouteStatsBackfill(routeDao).run(routesWithoutStats) }
+        }
     }
 
     private fun preLoadPlayerCache() {

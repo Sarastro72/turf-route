@@ -36,16 +36,98 @@ data class ZoneInfo(
 }
 
 data class RouteWithDestination(
-    val route: RouteInfo,
+    val route: RouteSummary,
     val toZone: ZoneInfo
 ) {
-    // Expects the route columns and the destination zone's columns under their own names in the same row
+    // Expects the route summary columns and the destination zone's columns under their own names in the same row
     class RouteWithDestinationRowMapper : RowMapper<RouteWithDestination> {
-        private val routeMapper = RouteInfo.RouteRowMapper()
+        private val routeMapper = RouteSummary.RouteSummaryRowMapper()
         private val zoneMapper = ZoneInfo.ZoneRowMapper()
 
         override fun map(rs: ResultSet, ctx: StatementContext): RouteWithDestination =
             RouteWithDestination(routeMapper.map(rs, ctx), zoneMapper.map(rs, ctx))
+    }
+}
+
+// What the map needs of a route, without the full list of times
+data class RouteSummary(
+    val fromZone: Int,
+    val toZone: Int,
+    val stats: RouteStats,
+    val fastestUser: String,
+    val fastestTimestamp: Instant
+) {
+    companion object {
+        fun from(route: RouteInfo) =
+            RouteSummary(
+                route.fromZone,
+                route.toZone,
+                RouteStats.from(route.times),
+                route.fastestUser,
+                route.fastestTimestamp
+            )
+    }
+
+    // Uses the stats columns, or computes the stats from times for routes the backfill hasn't reached yet
+    class RouteSummaryRowMapper : RowMapper<RouteSummary> {
+        override fun map(rs: ResultSet, ctx: StatementContext): RouteSummary = with(rs) {
+            RouteSummary(
+                getInt("fromZone"),
+                getInt("toZone"),
+                RouteStats.from(rs) ?: RouteStats.from(RouteInfo.Times(getString("times"))),
+                getString("fastestUser"),
+                getObject("fastestTimestamp", LocalDateTime::class.java).toInstant(ZoneOffset.UTC)
+            )
+        }
+    }
+}
+
+data class RouteStats(
+    val timesRun: Int,
+    val avgTime: Int,
+    val medTime: Int,
+    val fastestTime: Int
+) {
+    companion object {
+        fun from(times: RouteInfo.Times) =
+            RouteStats(times.size, times.avg(), times.med(), times.fastest())
+
+        // Null when the row has no stats yet
+        fun from(rs: ResultSet): RouteStats? = with(rs) {
+            val timesRun = getInt("timesRun")
+            if (wasNull()) {
+                null
+            } else {
+                RouteStats(
+                    timesRun,
+                    getInt("avgTime"),
+                    getInt("medTime"),
+                    getInt("fastestTime")
+                )
+            }
+        }
+    }
+}
+
+// A route's key with its stats, or its times when it has no stats yet. Used by the startup count and the stats backfill.
+data class RouteTimes(
+    val fromZone: Int,
+    val toZone: Int,
+    val stats: RouteStats?,
+    val times: String?
+) {
+    val timesRun: Int
+        get() = stats?.timesRun ?: RouteInfo.Times(times!!).size
+
+    class RouteTimesRowMapper : RowMapper<RouteTimes> {
+        override fun map(rs: ResultSet, ctx: StatementContext): RouteTimes = with(rs) {
+            RouteTimes(
+                getInt("fromZone"),
+                getInt("toZone"),
+                RouteStats.from(rs),
+                getString("times")
+            )
+        }
     }
 }
 
